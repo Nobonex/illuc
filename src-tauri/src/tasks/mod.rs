@@ -752,6 +752,18 @@ fn managed_worktree_root(repo_root: &Path) -> Result<PathBuf> {
     Ok(worktree_dir)
 }
 
+pub fn open_path_in_vscode(path: &str) -> Result<()> {
+    let target = PathBuf::from(path);
+    ensure_directory(&target)?;
+    spawn_vscode(&target)
+}
+
+pub fn open_path_terminal(path: &str) -> Result<()> {
+    let target = PathBuf::from(path);
+    ensure_directory(&target)?;
+    spawn_terminal(&target)
+}
+
 fn spawn_vscode(path: &Path) -> Result<()> {
     #[cfg(windows)]
     let candidates = ["code.cmd", "code.exe", "code"];

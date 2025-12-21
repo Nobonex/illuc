@@ -5,6 +5,8 @@ import { parseTitleParts, TitleParts } from "../../title.utils";
 import { TaskTerminalComponent } from "../task-terminal/task-terminal.component";
 import { TaskDiffComponent } from "../task-diff/task-diff.component";
 import { TaskActionButtonComponent } from "../task-action-button/task-action-button.component";
+import { OpenVsCodeButtonComponent } from "../open-vscode-button/open-vscode-button.component";
+import { OpenTerminalButtonComponent } from "../open-terminal-button/open-terminal-button.component";
 
 @Component({
   selector: "app-task-view",
@@ -14,6 +16,8 @@ import { TaskActionButtonComponent } from "../task-action-button/task-action-but
     TaskTerminalComponent,
     TaskDiffComponent,
     TaskActionButtonComponent,
+    OpenVsCodeButtonComponent,
+    OpenTerminalButtonComponent,
   ],
   templateUrl: "./task-view.component.html",
   styleUrl: "./task-view.component.css",
@@ -24,8 +28,6 @@ export class TaskViewComponent {
   @Output() startTask = new EventEmitter<string>();
   @Output() stopTask = new EventEmitter<string>();
   @Output() discardTask = new EventEmitter<string>();
-  @Output() openInVsCode = new EventEmitter<string>();
-  @Output() openTerminal = new EventEmitter<string>();
   @Output() selectBaseRepo = new EventEmitter<void>();
 
   statusLabel(): string {
@@ -63,18 +65,6 @@ export class TaskViewComponent {
   onDiscard(): void {
     if (this.task) {
       this.discardTask.emit(this.task.taskId);
-    }
-  }
-
-  onOpenVsCode(): void {
-    if (this.task) {
-      this.openInVsCode.emit(this.task.taskId);
-    }
-  }
-
-  onOpenTerminal(): void {
-    if (this.task) {
-      this.openTerminal.emit(this.task.taskId);
     }
   }
 

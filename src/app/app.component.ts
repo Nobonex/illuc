@@ -140,30 +140,6 @@ export class AppComponent {
     this.taskStore.selectTask(taskId);
   }
 
-  async openTaskInVsCode(taskId: string): Promise<void> {
-    try {
-      await this.taskStore.openTaskInVsCode(taskId);
-      this.statusMessage = "Opened workspace in VS Code.";
-    } catch (error: unknown) {
-      this.statusMessage = this.describeError(
-        error,
-        "Unable to open workspace in VS Code.",
-      );
-    }
-  }
-
-  async openTaskTerminal(taskId: string): Promise<void> {
-    try {
-      await this.taskStore.openTaskTerminal(taskId);
-      this.statusMessage = "Opened workspace terminal.";
-    } catch (error: unknown) {
-      this.statusMessage = this.describeError(
-        error,
-        "Unable to open workspace terminal.",
-      );
-    }
-  }
-
   cancelDiscardTask(): void {
     this.confirmDiscardTaskId = null;
     this.confirmDiscardTitle = "";

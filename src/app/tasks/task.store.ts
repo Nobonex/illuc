@@ -71,18 +71,6 @@ export class TaskStore {
     return summary;
   }
 
-  async openTaskInVsCode(taskId: string): Promise<void> {
-    await invoke("open_worktree_in_vscode", {
-      req: { taskId },
-    });
-  }
-
-  async openTaskTerminal(taskId: string): Promise<void> {
-    await invoke("open_worktree_terminal", {
-      req: { taskId },
-    });
-  }
-
   async startTask(taskId: string, codexArgs?: string[]): Promise<TaskSummary> {
     const summary = await invoke<TaskSummary>("start_task", {
       req: {

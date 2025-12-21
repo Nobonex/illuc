@@ -56,20 +56,9 @@
   margin-right: 0.5rem;
 }
 
-.workspace-actions .ghost {
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: transparent;
-  color: inherit;
-  padding: 0.35rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.workspace-actions .icon {
-  width: 18px;
-  height: 18px;
-  display: block;
+.workspace-actions app-open-vscode-button,
+.workspace-actions app-open-terminal-button {
+  display: inline-flex;
 }
 
 .icon-btn .icon {

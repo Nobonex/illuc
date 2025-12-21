@@ -3,11 +3,18 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { TaskStatus, TaskSummary, BaseRepoInfo } from "../../task.models";
 import { parseTitleParts, TitleParts } from "../../title.utils";
 import { TaskActionButtonComponent } from "../task-action-button/task-action-button.component";
+import { OpenVsCodeButtonComponent } from "../open-vscode-button/open-vscode-button.component";
+import { OpenTerminalButtonComponent } from "../open-terminal-button/open-terminal-button.component";
 
 @Component({
   selector: "app-task-sidebar",
   standalone: true,
-  imports: [CommonModule, TaskActionButtonComponent],
+  imports: [
+    CommonModule,
+    TaskActionButtonComponent,
+    OpenVsCodeButtonComponent,
+    OpenTerminalButtonComponent,
+  ],
   templateUrl: "./task-sidebar.component.html",
   styleUrl: "./task-sidebar.component.css",
 })

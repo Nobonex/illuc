@@ -13,52 +13,8 @@
       </div>
       <div class="header-actions">
         <div class="workspace-actions">
-          <button
-            type="button"
-            class="ghost icon-btn"
-            (click)="onOpenVsCode()"
-            title="Open in VS Code"
-            aria-label="Open in VS Code"
-          >
-            <svg
-              class="icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <polyline points="7 8 3 12 7 16"></polyline>
-              <polyline points="17 8 21 12 17 16"></polyline>
-              <line x1="14" y1="4" x2="10" y2="20"></line>
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="ghost icon-btn"
-            (click)="onOpenTerminal()"
-            title="Open terminal"
-            aria-label="Open terminal"
-          >
-            <svg
-              class="icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-              <polyline points="7 9 11 12 7 15"></polyline>
-              <line x1="12.5" y1="15" x2="17" y2="15"></line>
-            </svg>
-          </button>
+          <app-open-vscode-button [path]="current.worktreePath"></app-open-vscode-button>
+          <app-open-terminal-button [path]="current.worktreePath"></app-open-terminal-button>
         </div>
         <span class="status-pill" [attr.data-status]="current.status">
           {{ statusLabel() }}
