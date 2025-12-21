@@ -23,6 +23,10 @@ export class AppComponent {
   showCreateModal = false;
   branchNameInput = "";
   branchNameError = "";
+  confirmDiscardWorkflowId: string | null = null;
+  confirmDiscardTitle = "";
+  confirmDiscardBranch = "";
+  confirmDiscardError = "";
 
   constructor(public readonly workflowStore: WorkflowStore) {}
 
@@ -122,16 +126,14 @@ export class AppComponent {
     }
   }
 
-  async discardWorkflow(workflowId: string): Promise<void> {
-    try {
-      await this.workflowStore.discardWorkflow(workflowId);
-      this.statusMessage = "Workflow discarded and cleaned up.";
-    } catch (error: unknown) {
-      this.statusMessage = this.describeError(
-        error,
-        "Unable to discard workflow.",
-      );
-    }
+  discardWorkflow(workflowId: string): void {
+    const workflow =
+      this.workflowStore.workflows().find((wf) => wf.workflowId === workflowId) ??
+      null;
+    this.confirmDiscardWorkflowId = workflowId;
+    this.confirmDiscardTitle = workflow?.title ?? "Selected workflow";
+    this.confirmDiscardBranch = workflow?.branchName ?? "";
+    this.confirmDiscardError = "";
   }
 
   selectWorkflow(workflowId: string): void {
@@ -158,6 +160,29 @@ export class AppComponent {
       this.statusMessage = this.describeError(
         error,
         "Unable to open workspace terminal.",
+      );
+    }
+  }
+
+  cancelDiscardWorkflow(): void {
+    this.confirmDiscardWorkflowId = null;
+    this.confirmDiscardTitle = "";
+    this.confirmDiscardBranch = "";
+    this.confirmDiscardError = "";
+  }
+
+  async confirmDiscardWorkflow(): Promise<void> {
+    if (!this.confirmDiscardWorkflowId) {
+      return;
+    }
+    try {
+      await this.workflowStore.discardWorkflow(this.confirmDiscardWorkflowId);
+      this.statusMessage = "Workflow discarded and cleaned up.";
+      this.cancelDiscardWorkflow();
+    } catch (error: unknown) {
+      this.confirmDiscardError = this.describeError(
+        error,
+        "Unable to discard workflow.",
       );
     }
   }

@@ -481,25 +481,23 @@ impl WorkflowManager {
             None
         };
 
-        let mut diff_args = vec!["diff".to_string()];
-        if let Some(flag) = whitespace_flag {
-            diff_args.push(flag.to_string());
-        }
-        diff_args.push(base_commit.clone());
-        let diff_output = run_git(
+        let staged = git_diff(
             worktree_path.as_path(),
-            diff_args.iter().map(String::as_str),
+            Some("--cached"),
+            base_commit.as_str(),
+            whitespace_flag,
+        )?;
+        let unstaged = git_diff(
+            worktree_path.as_path(),
+            None,
+            base_commit.as_str(),
+            whitespace_flag,
         )?;
 
-        let mut files_args = vec!["diff".to_string(), "--name-status".to_string(), base_commit];
-        if let Some(flag) = whitespace_flag {
-            files_args.insert(1, flag.to_string());
-        }
-        let files_output = run_git(
-            worktree_path.as_path(),
-            files_args.iter().map(String::as_str),
-        )?;
-        let files = parse_diff_files(&files_output);
+        let diff_output = format!("{}\n{}", staged.diff, unstaged.diff)
+            .trim()
+            .to_string();
+        let files = merge_diff_files(staged.files, unstaged.files);
 
         Ok(DiffPayload {
             workflow_id,
@@ -987,6 +985,62 @@ fn extract_task_and_label(slug: &str) -> (Option<String>, String) {
     };
 
     (task_id, label.trim().to_string())
+}
+
+struct DiffResult {
+    diff: String,
+    files: Vec<DiffFile>,
+}
+
+fn git_diff(
+    repo: &Path,
+    mode: Option<&str>,
+    base_commit: &str,
+    whitespace_flag: Option<&str>,
+) -> Result<DiffResult> {
+    let mut diff_args = vec!["diff".to_string()];
+    if let Some(flag) = whitespace_flag {
+        diff_args.push(flag.to_string());
+    }
+    if let Some(mode_flag) = mode {
+        diff_args.push(mode_flag.to_string());
+    }
+    diff_args.push(base_commit.to_string());
+    let diff_output = run_git(repo, diff_args.iter().map(String::as_str))?;
+
+    let mut files_args = vec!["diff".to_string(), "--name-status".to_string()];
+    if let Some(flag) = whitespace_flag {
+        files_args.insert(1, flag.to_string());
+    }
+    if let Some(mode_flag) = mode {
+        files_args.push(mode_flag.to_string());
+    }
+    files_args.push(base_commit.to_string());
+    let files_output = run_git(repo, files_args.iter().map(String::as_str))?;
+    let files = parse_diff_files(&files_output);
+
+    Ok(DiffResult {
+        diff: if mode == Some("--cached") {
+            format!("--- Staged Changes ---\n{}", diff_output)
+        } else {
+            format!("--- Unstaged Changes ---\n{}", diff_output)
+        },
+        files,
+    })
+}
+
+fn merge_diff_files(mut staged: Vec<DiffFile>, mut unstaged: Vec<DiffFile>) -> Vec<DiffFile> {
+    staged.append(&mut unstaged);
+    let mut combined = Vec::new();
+    for file in staged {
+        if !combined
+            .iter()
+            .any(|existing: &DiffFile| existing.path == file.path)
+        {
+            combined.push(file);
+        }
+    }
+    combined
 }
 
 fn run_git<I, S>(repo: &Path, args: I) -> Result<String>

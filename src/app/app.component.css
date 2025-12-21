@@ -102,6 +102,12 @@
   background: rgba(92, 225, 230, 0.2);
 }
 
+.modal .primary.warn {
+  background: rgba(255, 92, 87, 0.2);
+  border-color: rgba(255, 92, 87, 0.4);
+  color: #ffb0aa;
+}
+
 .error {
   color: #ff8c85;
   font-size: 0.85rem;

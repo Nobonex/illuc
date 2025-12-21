@@ -1,3 +1,8 @@
+:host {
+  height: 100%;
+  min-height: 0;
+}
+
 .workflow-detail {
   display: flex;
   flex-direction: column;
@@ -56,9 +61,31 @@
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: transparent;
   color: inherit;
-  padding: 0.25rem 0.65rem;
+  padding: 0.35rem;
   font-size: 0.75rem;
   cursor: pointer;
+}
+
+.workspace-actions .icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.icon-btn .icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  border-radius: 50%;
 }
 
 .status-pill {
@@ -131,17 +158,19 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   height: 100%;
+  width: 100%;
   color: rgba(255, 255, 255, 0.85);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   text-align: center;
   letter-spacing: 0.5px;
-  width: 100%;
-  max-width: 520px;
-  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .empty-view p {
   margin: 0;
   width: 100%;
+  max-width: 520px;
+  text-align: center;
 }

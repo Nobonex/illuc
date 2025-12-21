@@ -170,11 +170,35 @@ button.ghost {
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.icon-btn .icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+button.ghost.icon-btn {
+  border-radius: 50%;
+  padding: 0;
 }
 
 button.ghost:hover:not(:disabled) {
   border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 button.ghost.warn {

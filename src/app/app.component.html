@@ -44,4 +44,20 @@
       </div>
     </div>
   </div>
+
+  <div class="modal-backdrop" *ngIf="confirmDiscardWorkflowId">
+    <div class="modal">
+      <h3>Discard workflow?</h3>
+      <p class="modal-subtitle">
+        This will remove the worktree and discard all changes for
+        <strong>{{ confirmDiscardTitle }}</strong>
+        <span *ngIf="confirmDiscardBranch">({{ confirmDiscardBranch }})</span>. This action cannot be undone.
+      </p>
+      <div class="error" *ngIf="confirmDiscardError">{{ confirmDiscardError }}</div>
+      <div class="modal-actions">
+        <button type="button" class="ghost" (click)="cancelDiscardWorkflow()">Cancel</button>
+        <button type="button" class="primary warn" (click)="confirmDiscardWorkflow()">Discard</button>
+      </div>
+    </div>
+  </div>
 </div>
