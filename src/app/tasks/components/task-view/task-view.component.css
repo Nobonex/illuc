@@ -3,7 +3,7 @@
   min-height: 0;
 }
 
-.workflow-detail {
+.task-detail {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -11,7 +11,7 @@
   overflow: hidden;
 }
 
-.workflow-header {
+.task-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -19,7 +19,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.workflow-header h2 {
+.task-header h2 {
   margin: 0 0 0.3rem 0;
 }
 
@@ -118,7 +118,7 @@
   overflow: hidden;
 }
 
-.terminal-column app-workflow-terminal {
+.terminal-column app-task-terminal {
   flex: 1;
   display: flex;
   min-height: 0;
@@ -130,7 +130,7 @@
   display: flex;
 }
 
-.diff-column app-workflow-diff {
+.diff-column app-task-diff {
   flex: 1;
   display: block;
 }

@@ -2,7 +2,7 @@
   <header class="terminal-toolbar">
     <div>
       <strong>Chat Terminal</strong>
-      <span class="workflow-label" *ngIf="workflowId">#{{ workflowId.slice(0, 8) }}</span>
+      <span class="task-label" *ngIf="taskId">#{{ taskId.slice(0, 8) }}</span>
     </div>
     <div class="toolbar-actions">
       <button type="button" (click)="clear()">Clear</button>

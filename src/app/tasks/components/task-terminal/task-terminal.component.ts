@@ -12,19 +12,19 @@ import { CommonModule } from "@angular/common";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { Subscription } from "rxjs";
-import { WorkflowStore } from "../../workflow.store";
+import { TaskStore } from "../../task.store";
 
 @Component({
-  selector: "app-workflow-terminal",
+  selector: "app-task-terminal",
   standalone: true,
   imports: [CommonModule],
-  templateUrl: "./workflow-terminal.component.html",
-  styleUrl: "./workflow-terminal.component.css",
+  templateUrl: "./task-terminal.component.html",
+  styleUrl: "./task-terminal.component.css",
 })
-export class WorkflowTerminalComponent
+export class TaskTerminalComponent
   implements AfterViewInit, OnChanges, OnDestroy
 {
-  @Input() workflowId: string | null = null;
+  @Input() taskId: string | null = null;
   @ViewChild("terminalHost", { static: true })
   terminalHost?: ElementRef<HTMLDivElement>;
 
@@ -33,7 +33,7 @@ export class WorkflowTerminalComponent
   private dataSubscription?: Subscription;
   private resizeObserver?: ResizeObserver;
 
-  constructor(private readonly workflowStore: WorkflowStore) {}
+  constructor(private readonly taskStore: TaskStore) {}
 
   ngAfterViewInit(): void {
     this.initializeTerminal();
@@ -42,7 +42,7 @@ export class WorkflowTerminalComponent
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes["workflowId"] && !changes["workflowId"].firstChange) {
+    if (changes["taskId"] && !changes["taskId"].firstChange) {
       this.refreshTerminalSession();
     }
   }
@@ -54,8 +54,8 @@ export class WorkflowTerminalComponent
   }
 
   async clear(): Promise<void> {
-    if (this.workflowId) {
-      this.workflowStore.clearTerminal(this.workflowId);
+    if (this.taskId) {
+      this.taskStore.clearTerminal(this.taskId);
     }
     this.terminal?.reset();
   }
@@ -105,17 +105,17 @@ export class WorkflowTerminalComponent
     this.dataSubscription?.unsubscribe();
     this.terminal.reset();
 
-    if (!this.workflowId) {
+    if (!this.taskId) {
       return;
     }
 
-    const buffer = this.workflowStore.getTerminalBuffer(this.workflowId);
+    const buffer = this.taskStore.getTerminalBuffer(this.taskId);
     if (buffer) {
       this.terminal.write(buffer);
     }
 
-    this.dataSubscription = this.workflowStore
-      .terminalOutput$(this.workflowId)
+    this.dataSubscription = this.taskStore
+      .terminalOutput$(this.taskId)
       .subscribe((chunk) => {
         this.terminal?.write(chunk);
       });
@@ -124,9 +124,9 @@ export class WorkflowTerminalComponent
 
   private fitTerminal(): void {
     this.fitAddon?.fit();
-    if (this.workflowId && this.terminal) {
-      void this.workflowStore.resizeWorkflowTerminal(
-        this.workflowId,
+    if (this.taskId && this.terminal) {
+      void this.taskStore.resizeTaskTerminal(
+        this.taskId,
         this.terminal.cols,
         this.terminal.rows,
       );
@@ -142,16 +142,16 @@ export class WorkflowTerminalComponent
   }
 
   private handleTerminalInput(data: string): void {
-    if (!this.workflowId) {
+    if (!this.taskId) {
       return;
     }
-    void this.workflowStore.writeToWorkflow(this.workflowId, data);
+    void this.taskStore.writeToTask(this.taskId, data);
   }
 
   private handleResize(cols: number, rows: number): void {
-    if (!this.workflowId) {
+    if (!this.taskId) {
       return;
     }
-    void this.workflowStore.resizeWorkflowTerminal(this.workflowId, cols, rows);
+    void this.taskStore.resizeTaskTerminal(this.taskId, cols, rows);
   }
 }

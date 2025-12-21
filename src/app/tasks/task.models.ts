@@ -1,4 +1,4 @@
-export type WorkflowStatus =
+export type TaskStatus =
   | "CREATING_WORKTREE"
   | "READY"
   | "RUNNING"
@@ -8,10 +8,10 @@ export type WorkflowStatus =
   | "STOPPED"
   | "DISCARDED";
 
-export interface WorkflowSummary {
-  workflowId: string;
+export interface TaskSummary {
+  taskId: string;
   title: string;
-  status: WorkflowStatus;
+  status: TaskStatus;
   createdAt: string;
   startedAt?: string | null;
   endedAt?: string | null;
@@ -37,17 +37,17 @@ export interface DiffFile {
 export type DiffMode = "worktree" | "branch";
 
 export interface DiffPayload {
-  workflowId: string;
+  taskId: string;
   files: DiffFile[];
   unifiedDiff: string;
 }
 
 export interface TerminalOutputEvent {
-  workflowId: string;
+  taskId: string;
   data: string;
 }
 
 export interface TerminalExitEvent {
-  workflowId: string;
+  taskId: string;
   exitCode: number;
 }

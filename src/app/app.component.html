@@ -1,28 +1,28 @@
 <div class="app-shell">
   <main class="content">
-    <app-workflow-sidebar
+    <app-task-sidebar
       *ngIf="baseRepo() as repo"
-      [workflows]="workflows()"
-      [selectedWorkflowId]="workflowStore.selectedWorkflowId()"
+      [tasks]="tasks()"
+      [selectedTaskId]="taskStore.selectedTaskId()"
       [baseRepo]="repo"
-      (createWorkflow)="openCreateWorkflowModal()"
-      (selectWorkflow)="selectWorkflow($event)"
-      (startWorkflow)="startWorkflow($event)"
-      (stopWorkflow)="stopWorkflow($event)"
-      (discardWorkflow)="discardWorkflow($event)"
-    ></app-workflow-sidebar>
+      (createTask)="openCreateTaskModal()"
+      (selectTask)="selectTask($event)"
+      (startTask)="startTask($event)"
+      (stopTask)="stopTask($event)"
+      (discardTask)="discardTask($event)"
+    ></app-task-sidebar>
 
-    <app-workflow-view
-      class="workflow-view"
-      [workflow]="selectedWorkflow()"
+    <app-task-view
+      class="task-view"
+      [task]="selectedTask()"
       [baseRepo]="baseRepo()"
-      (startWorkflow)="startWorkflow($event)"
-      (stopWorkflow)="stopWorkflow($event)"
-      (discardWorkflow)="discardWorkflow($event)"
-      (openInVsCode)="openWorkflowInVsCode($event)"
-      (openTerminal)="openWorkflowTerminal($event)"
+      (startTask)="startTask($event)"
+      (stopTask)="stopTask($event)"
+      (discardTask)="discardTask($event)"
+      (openInVsCode)="openTaskInVsCode($event)"
+      (openTerminal)="openTaskTerminal($event)"
       (selectBaseRepo)="browseForRepo()"
-    ></app-workflow-view>
+    ></app-task-view>
   </main>
 
   <footer class="status-bar" *ngIf="statusMessage">
@@ -31,8 +31,8 @@
 
   <div class="modal-backdrop" *ngIf="showCreateModal">
     <div class="modal">
-      <h3>Create Workflow</h3>
-      <p class="modal-subtitle">Provide the Git branch name for this workflow.</p>
+      <h3>Create Task</h3>
+      <p class="modal-subtitle">Provide the Git branch name for this task.</p>
       <label class="input-label">Branch name</label>
       <input
         type="text"
@@ -41,15 +41,15 @@
       />
       <div class="error" *ngIf="branchNameError">{{ branchNameError }}</div>
       <div class="modal-actions">
-        <button type="button" class="ghost" (click)="closeCreateWorkflowModal()">Cancel</button>
-        <button type="button" class="primary" (click)="submitNewWorkflow()">Create Workflow</button>
+        <button type="button" class="ghost" (click)="closeCreateTaskModal()">Cancel</button>
+        <button type="button" class="primary" (click)="submitNewTask()">Create Task</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-backdrop" *ngIf="confirmDiscardWorkflowId">
+  <div class="modal-backdrop" *ngIf="confirmDiscardTaskId">
     <div class="modal">
-      <h3>Discard workflow?</h3>
+      <h3>Discard task?</h3>
       <p class="modal-subtitle">
         This will remove the worktree and discard all changes for
         <strong>{{ confirmDiscardTitle }}</strong>
@@ -57,8 +57,8 @@
       </p>
       <div class="error" *ngIf="confirmDiscardError">{{ confirmDiscardError }}</div>
       <div class="modal-actions">
-        <button type="button" class="ghost" (click)="cancelDiscardWorkflow()">Cancel</button>
-        <button type="button" class="primary warn" (click)="confirmDiscardWorkflow()">Discard</button>
+        <button type="button" class="ghost" (click)="cancelDiscardTask()">Cancel</button>
+        <button type="button" class="primary warn" (click)="confirmDiscardTask()">Discard</button>
       </div>
     </div>
   </div>

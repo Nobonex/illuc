@@ -31,13 +31,13 @@
         />
         Ignore whitespace
       </label>
-      <button type="button" [disabled]="!workflowId" (click)="refreshNow()">
+      <button type="button" [disabled]="!taskId" (click)="refreshNow()">
         Refresh
       </button>
     </div>
   </header>
 
-  <ng-container *ngIf="workflowId; else noWorkflowSelected">
+  <ng-container *ngIf="taskId; else noTaskSelected">
     <div *ngIf="error" class="diff-error">{{ error }}</div>
 
     <div *ngIf="!error && renderedFiles.length; else noDiff" class="diff-content">
@@ -78,8 +78,8 @@
     </ng-template>
   </ng-container>
 
-  <ng-template #noWorkflowSelected>
-    <p class="diff-empty">Select a workflow to see its diff.</p>
+  <ng-template #noTaskSelected>
+    <p class="diff-empty">Select a task to see its diff.</p>
   </ng-template>
 
   <ng-template #noDiff>

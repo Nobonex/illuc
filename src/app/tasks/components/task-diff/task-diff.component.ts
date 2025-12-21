@@ -29,8 +29,8 @@ import markdown from "highlight.js/lib/languages/markdown";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import { EMPTY, Subscription, from, timer } from "rxjs";
 import { catchError, switchMap } from "rxjs/operators";
-import { DiffMode, DiffPayload } from "../../workflow.models";
-import { WorkflowStore } from "../../workflow.store";
+import { DiffMode, DiffPayload } from "../../task.models";
+import { TaskStore } from "../../task.store";
 
 hljs.registerLanguage("javascript", javascript);
 hljs.registerLanguage("typescript", typescript);
@@ -65,14 +65,14 @@ interface RenderedDiffFile {
 }
 
 @Component({
-  selector: "app-workflow-diff",
+  selector: "app-task-diff",
   standalone: true,
   imports: [CommonModule],
-  templateUrl: "./workflow-diff.component.html",
-  styleUrl: "./workflow-diff.component.css",
+  templateUrl: "./task-diff.component.html",
+  styleUrl: "./task-diff.component.css",
 })
-export class WorkflowDiffComponent implements OnChanges, OnDestroy {
-  @Input() workflowId: string | null = null;
+export class TaskDiffComponent implements OnChanges, OnDestroy {
+  @Input() taskId: string | null = null;
   @ViewChildren("diffSection") diffSections?: QueryList<ElementRef<HTMLElement>>;
 
   diffPayload: DiffPayload | null = null;
@@ -84,12 +84,12 @@ export class WorkflowDiffComponent implements OnChanges, OnDestroy {
   private polling?: Subscription;
 
   constructor(
-    private readonly workflowStore: WorkflowStore,
+    private readonly taskStore: TaskStore,
     private readonly sanitizer: DomSanitizer,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes["workflowId"]) {
+    if (changes["taskId"]) {
       this.restartPolling();
     }
   }
@@ -120,15 +120,15 @@ export class WorkflowDiffComponent implements OnChanges, OnDestroy {
     this.diffPayload = null;
     this.renderedFiles = [];
     this.error = null;
-    if (!this.workflowId) {
+    if (!this.taskId) {
       return;
     }
-    const workflowId = this.workflowId;
+    const taskId = this.taskId;
     this.polling = timer(0, 2000)
       .pipe(
         switchMap(() =>
           from(
-            this.workflowStore.getDiff(workflowId, this.ignoreWhitespace, this.diffMode),
+            this.taskStore.getDiff(taskId, this.ignoreWhitespace, this.diffMode),
           ).pipe(
             catchError((err) => {
               this.error =
@@ -153,11 +153,11 @@ export class WorkflowDiffComponent implements OnChanges, OnDestroy {
   }
 
   private fetchDiffOnce(): void {
-    if (!this.workflowId) {
+    if (!this.taskId) {
       return;
     }
-    void this.workflowStore
-      .getDiff(this.workflowId, this.ignoreWhitespace, this.diffMode)
+    void this.taskStore
+      .getDiff(this.taskId, this.ignoreWhitespace, this.diffMode)
       .then((payload) => {
         this.diffPayload = payload;
         this.renderedFiles = this.buildRenderedDiff(payload);

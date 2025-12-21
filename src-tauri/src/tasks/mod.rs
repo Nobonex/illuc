@@ -14,7 +14,7 @@ use tauri::{AppHandle, Emitter};
 use thiserror::Error;
 use uuid::Uuid;
 
-type Result<T> = std::result::Result<T, WorkflowError>;
+type Result<T> = std::result::Result<T, TaskError>;
 type ChildHandle = Box<dyn Child + Send + Sync>;
 
 #[derive(Debug, Clone)]
@@ -25,16 +25,16 @@ struct WorktreeEntry {
 }
 
 #[derive(Debug, Error)]
-pub enum WorkflowError {
+pub enum TaskError {
     #[error("{0}")]
     Message(String),
     #[error("git command failed: {command}")]
     GitCommand { command: String, stderr: String },
-    #[error("workflow not found")]
+    #[error("task not found")]
     NotFound,
-    #[error("workflow is already running")]
+    #[error("task is already running")]
     AlreadyRunning,
-    #[error("workflow is not running")]
+    #[error("task is not running")]
     NotRunning,
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -44,7 +44,7 @@ pub enum WorkflowError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum WorkflowStatus {
+pub enum TaskStatus {
     CreatingWorktree,
     Ready,
     Running,
@@ -57,10 +57,10 @@ pub enum WorkflowStatus {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct WorkflowSummary {
-    pub workflow_id: Uuid,
+pub struct TaskSummary {
+    pub task_id: Uuid,
     pub title: String,
-    pub status: WorkflowStatus,
+    pub status: TaskStatus,
     pub created_at: DateTime<Utc>,
     pub started_at: Option<DateTime<Utc>>,
     pub ended_at: Option<DateTime<Utc>>,
@@ -82,7 +82,7 @@ pub struct BaseRepoInfo {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateWorkflowRequest {
+pub struct CreateTaskRequest {
     pub base_repo_path: String,
     pub task_title: Option<String>,
     pub base_ref: Option<String>,
@@ -91,35 +91,35 @@ pub struct CreateWorkflowRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StartWorkflowRequest {
-    pub workflow_id: Uuid,
+pub struct StartTaskRequest {
+    pub task_id: Uuid,
     pub codex_args: Option<Vec<String>>,
     pub env: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StopWorkflowRequest {
-    pub workflow_id: Uuid,
+pub struct StopTaskRequest {
+    pub task_id: Uuid,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DiscardWorkflowRequest {
-    pub workflow_id: Uuid,
+pub struct DiscardTaskRequest {
+    pub task_id: Uuid,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TerminalWriteRequest {
-    pub workflow_id: Uuid,
+    pub task_id: Uuid,
     pub data: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TerminalResizeRequest {
-    pub workflow_id: Uuid,
+    pub task_id: Uuid,
     pub cols: u16,
     pub rows: u16,
 }
@@ -127,21 +127,21 @@ pub struct TerminalResizeRequest {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiffRequest {
-    pub workflow_id: Uuid,
+    pub task_id: Uuid,
     pub ignore_whitespace: Option<bool>,
     pub mode: Option<DiffMode>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct WorkflowActionRequest {
-    pub workflow_id: Uuid,
+pub struct TaskActionRequest {
+    pub task_id: Uuid,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiffPayload {
-    pub workflow_id: Uuid,
+    pub task_id: Uuid,
     pub files: Vec<DiffFile>,
     pub unified_diff: String,
 }
@@ -166,35 +166,35 @@ pub struct DiffFile {
     pub status: String,
 }
 
-struct WorkflowRecord {
-    summary: WorkflowSummary,
-    runtime: Option<WorkflowRuntime>,
+struct TaskRecord {
+    summary: TaskSummary,
+    runtime: Option<TaskRuntime>,
     terminal_buffer: String,
 }
 
-struct WorkflowRuntime {
+struct TaskRuntime {
     child: Arc<Mutex<ChildHandle>>,
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
 }
 
 #[derive(Clone, Default)]
-pub struct WorkflowManager {
-    inner: Arc<WorkflowManagerInner>,
+pub struct TaskManager {
+    inner: Arc<TaskManagerInner>,
 }
 
 #[derive(Default)]
-struct WorkflowManagerInner {
-    workflows: RwLock<HashMap<Uuid, WorkflowRecord>>,
+struct TaskManagerInner {
+    tasks: RwLock<HashMap<Uuid, TaskRecord>>,
 }
 
-impl WorkflowManager {
-    pub fn create_workflow(
+impl TaskManager {
+    pub fn create_task(
         &self,
-        req: CreateWorkflowRequest,
+        req: CreateTaskRequest,
         app: &AppHandle,
-    ) -> Result<WorkflowSummary> {
-        let CreateWorkflowRequest {
+    ) -> Result<TaskSummary> {
+        let CreateTaskRequest {
             base_repo_path,
             task_title,
             base_ref,
@@ -210,16 +210,16 @@ impl WorkflowManager {
         let base_ref = base_ref.unwrap_or_else(|| "HEAD".to_string());
         let base_commit = run_git(&repo_root, ["rev-parse", base_ref.as_str()])?;
 
-        let workflow_id = Uuid::new_v4();
-        let title = task_title.unwrap_or_else(|| format!("Workflow {}", workflow_id.simple()));
+        let task_id = Uuid::new_v4();
+        let title = task_title.unwrap_or_else(|| format!("Task {}", task_id.simple()));
         let timestamp = Utc::now();
         let branch_name = branch_name
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
-            .ok_or_else(|| WorkflowError::Message("Branch name is required.".into()))?;
+            .ok_or_else(|| TaskError::Message("Branch name is required.".into()))?;
 
         let managed_root = managed_worktree_root(&repo_root)?;
-        let worktree_path = managed_root.join(workflow_id.to_string());
+        let worktree_path = managed_root.join(task_id.to_string());
 
         if worktree_path.exists() {
             std::fs::remove_dir_all(&worktree_path).ok();
@@ -238,10 +238,10 @@ impl WorkflowManager {
             ],
         )?;
 
-        let summary = WorkflowSummary {
-            workflow_id,
+        let summary = TaskSummary {
+            task_id,
             title,
-            status: WorkflowStatus::Ready,
+            status: TaskStatus::Ready,
             created_at: timestamp,
             started_at: None,
             ended_at: None,
@@ -252,41 +252,41 @@ impl WorkflowManager {
             exit_code: None,
         };
 
-        let mut workflows = self.inner.workflows.write();
-        workflows.insert(
-            workflow_id,
-            WorkflowRecord {
+        let mut tasks = self.inner.tasks.write();
+        tasks.insert(
+            task_id,
+            TaskRecord {
                 summary: summary.clone(),
                 runtime: None,
                 terminal_buffer: String::new(),
             },
         );
-        drop(workflows);
+        drop(tasks);
         emit_status(app, &summary);
         Ok(summary)
     }
 
-    pub fn start_workflow(
+    pub fn start_task(
         &self,
-        req: StartWorkflowRequest,
+        req: StartTaskRequest,
         app: &AppHandle,
-    ) -> Result<WorkflowSummary> {
-        let StartWorkflowRequest {
-            workflow_id,
+    ) -> Result<TaskSummary> {
+        let StartTaskRequest {
+            task_id,
             codex_args,
             env,
         } = req;
         {
-            let workflows = self.inner.workflows.read();
-            let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+            let tasks = self.inner.tasks.read();
+            let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             if record.runtime.is_some() {
-                return Err(WorkflowError::AlreadyRunning);
+                return Err(TaskError::AlreadyRunning);
             }
         }
 
         let (worktree_path, title) = {
-            let workflows = self.inner.workflows.read();
-            let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+            let tasks = self.inner.tasks.read();
+            let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             (
                 PathBuf::from(&record.summary.worktree_path),
                 record.summary.title.clone(),
@@ -325,18 +325,18 @@ impl WorkflowManager {
         let child = pair
             .slave
             .spawn_command(command)
-            .with_context(|| format!("failed to start Codex for workflow {}", title))?;
+            .with_context(|| format!("failed to start Codex for task {}", title))?;
         let child: Arc<Mutex<ChildHandle>> = Arc::new(Mutex::new(child));
 
         {
-            let mut workflows = self.inner.workflows.write();
-            let record = workflows
-                .get_mut(&workflow_id)
-                .ok_or(WorkflowError::NotFound)?;
-            record.summary.status = WorkflowStatus::Running;
+            let mut tasks = self.inner.tasks.write();
+            let record = tasks
+                .get_mut(&task_id)
+                .ok_or(TaskError::NotFound)?;
+            record.summary.status = TaskStatus::Running;
             record.summary.started_at = Some(Utc::now());
             record.summary.exit_code = None;
-            record.runtime = Some(WorkflowRuntime {
+            record.runtime = Some(TaskRuntime {
                 child: child.clone(),
                 writer: writer.clone(),
                 master: master.clone(),
@@ -347,33 +347,33 @@ impl WorkflowManager {
         let reader_manager = self.clone();
         let reader_app = app.clone();
         std::thread::spawn(move || {
-            stream_terminal_output(reader, reader_manager, reader_app, workflow_id);
+            stream_terminal_output(reader, reader_manager, reader_app, task_id);
         });
 
         let exit_manager = self.clone();
         let exit_app = app.clone();
         tauri::async_runtime::spawn(async move {
-            wait_for_exit(exit_manager, exit_app, workflow_id, child).await;
+            wait_for_exit(exit_manager, exit_app, task_id, child).await;
         });
 
-        let workflows = self.inner.workflows.read();
-        let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+        let tasks = self.inner.tasks.read();
+        let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
         Ok(record.summary.clone())
     }
 
-    pub fn stop_workflow(
+    pub fn stop_task(
         &self,
-        req: StopWorkflowRequest,
+        req: StopTaskRequest,
         app: &AppHandle,
-    ) -> Result<WorkflowSummary> {
-        let workflow_id = req.workflow_id;
+    ) -> Result<TaskSummary> {
+        let task_id = req.task_id;
         let child = {
-            let workflows = self.inner.workflows.read();
-            let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+            let tasks = self.inner.tasks.read();
+            let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             if let Some(runtime) = &record.runtime {
                 runtime.child.clone()
             } else {
-                return Err(WorkflowError::NotRunning);
+                return Err(TaskError::NotRunning);
             }
         };
 
@@ -382,21 +382,21 @@ impl WorkflowManager {
         }
 
         {
-            let mut workflows = self.inner.workflows.write();
-            let record = workflows
-                .get_mut(&workflow_id)
-                .ok_or(WorkflowError::NotFound)?;
-            record.summary.status = WorkflowStatus::Stopped;
+            let mut tasks = self.inner.tasks.write();
+            let record = tasks
+                .get_mut(&task_id)
+                .ok_or(TaskError::NotFound)?;
+            record.summary.status = TaskStatus::Stopped;
             emit_status(app, &record.summary);
             return Ok(record.summary.clone());
         }
     }
 
-    pub fn discard_workflow(&self, req: DiscardWorkflowRequest, app: &AppHandle) -> Result<()> {
-        let workflow_id = req.workflow_id;
+    pub fn discard_task(&self, req: DiscardTaskRequest, app: &AppHandle) -> Result<()> {
+        let task_id = req.task_id;
         let (worktree_path, branch_name, base_repo_path, runtime_exists) = {
-            let workflows = self.inner.workflows.read();
-            let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+            let tasks = self.inner.tasks.read();
+            let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             (
                 PathBuf::from(&record.summary.worktree_path),
                 record.summary.branch_name.clone(),
@@ -406,7 +406,7 @@ impl WorkflowManager {
         };
 
         if runtime_exists {
-            let _ = self.stop_workflow(StopWorkflowRequest { workflow_id }, app);
+            let _ = self.stop_task(StopTaskRequest { task_id }, app);
         }
 
         let worktree_path_string = worktree_path.to_string_lossy().to_string();
@@ -425,27 +425,27 @@ impl WorkflowManager {
         }
 
         {
-            let mut workflows = self.inner.workflows.write();
-            if let Some(record) = workflows.get_mut(&workflow_id) {
-                record.summary.status = WorkflowStatus::Discarded;
+            let mut tasks = self.inner.tasks.write();
+            if let Some(record) = tasks.get_mut(&task_id) {
+                record.summary.status = TaskStatus::Discarded;
                 record.runtime = None;
                 emit_status(app, &record.summary);
             }
         }
 
-        let mut workflows = self.inner.workflows.write();
-        workflows.remove(&workflow_id);
+        let mut tasks = self.inner.tasks.write();
+        tasks.remove(&task_id);
         Ok(())
     }
 
     pub fn terminal_write(&self, req: TerminalWriteRequest) -> Result<()> {
-        let workflow_id = req.workflow_id;
+        let task_id = req.task_id;
         let writer = {
-            let workflows = self.inner.workflows.read();
-            let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+            let tasks = self.inner.tasks.read();
+            let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             match &record.runtime {
                 Some(runtime) => runtime.writer.clone(),
-                None => return Err(WorkflowError::NotRunning),
+                None => return Err(TaskError::NotRunning),
             }
         };
         let mut writer_guard = writer.lock();
@@ -457,13 +457,13 @@ impl WorkflowManager {
     }
 
     pub fn terminal_resize(&self, req: TerminalResizeRequest) -> Result<()> {
-        let workflow_id = req.workflow_id;
+        let task_id = req.task_id;
         let master = {
-            let workflows = self.inner.workflows.read();
-            let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+            let tasks = self.inner.tasks.read();
+            let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             match &record.runtime {
                 Some(runtime) => runtime.master.clone(),
-                None => return Err(WorkflowError::NotRunning),
+                None => return Err(TaskError::NotRunning),
             }
         };
         master
@@ -479,10 +479,10 @@ impl WorkflowManager {
     }
 
     pub fn get_diff(&self, req: DiffRequest) -> Result<DiffPayload> {
-        let workflow_id = req.workflow_id;
+        let task_id = req.task_id;
         let (worktree_path, base_commit) = {
-            let workflows = self.inner.workflows.read();
-            let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+            let tasks = self.inner.tasks.read();
+            let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             (
                 PathBuf::from(&record.summary.worktree_path),
                 record.summary.base_commit.clone(),
@@ -512,7 +512,7 @@ impl WorkflowManager {
                 let files = merge_diff_files(staged.files, unstaged.files);
 
                 Ok(DiffPayload {
-                    workflow_id,
+                    task_id,
                     files,
                     unified_diff: diff_output,
                 })
@@ -524,7 +524,7 @@ impl WorkflowManager {
                     whitespace_flag,
                 )?;
                 Ok(DiffPayload {
-                    workflow_id,
+                    task_id,
                     files: branch_diff.files,
                     unified_diff: branch_diff.diff,
                 })
@@ -532,8 +532,8 @@ impl WorkflowManager {
         }
     }
 
-    fn append_terminal_output(&self, workflow_id: Uuid, chunk: &str) {
-        if let Some(record) = self.inner.workflows.write().get_mut(&workflow_id) {
+    fn append_terminal_output(&self, task_id: Uuid, chunk: &str) {
+        if let Some(record) = self.inner.tasks.write().get_mut(&task_id) {
             record.terminal_buffer.push_str(chunk);
         }
     }
@@ -541,7 +541,7 @@ impl WorkflowManager {
     fn contains_worktree_path(&self, path: &Path) -> bool {
         let target = path.to_string_lossy();
         self.inner
-            .workflows
+            .tasks
             .read()
             .values()
             .any(|record| record.summary.worktree_path == target)
@@ -551,7 +551,7 @@ impl WorkflowManager {
         &self,
         base_repo_path: String,
         app: &AppHandle,
-    ) -> Result<Vec<WorkflowSummary>> {
+    ) -> Result<Vec<TaskSummary>> {
         let provided_path = PathBuf::from(&base_repo_path);
         ensure_directory(&provided_path)?;
         validate_git_repo(&provided_path)?;
@@ -584,10 +584,10 @@ impl WorkflowManager {
                     let short_head: String = entry.head.chars().take(7).collect();
                     format!("detached-{}", short_head)
                 });
-            let summary = WorkflowSummary {
-                workflow_id: Uuid::new_v4(),
+            let summary = TaskSummary {
+                task_id: Uuid::new_v4(),
                 title: format_title_from_branch(&branch_name),
-                status: WorkflowStatus::Ready,
+                status: TaskStatus::Ready,
                 created_at: Utc::now(),
                 started_at: None,
                 ended_at: None,
@@ -597,9 +597,9 @@ impl WorkflowManager {
                 base_commit: base_repo_head.clone(),
                 exit_code: None,
             };
-            self.inner.workflows.write().insert(
-                summary.workflow_id,
-                WorkflowRecord {
+            self.inner.tasks.write().insert(
+                summary.task_id,
+                TaskRecord {
                     summary: summary.clone(),
                     runtime: None,
                     terminal_buffer: String::new(),
@@ -611,35 +611,35 @@ impl WorkflowManager {
         Ok(inserted)
     }
 
-    fn worktree_path(&self, workflow_id: Uuid) -> Result<PathBuf> {
-        let workflows = self.inner.workflows.read();
-        let record = workflows.get(&workflow_id).ok_or(WorkflowError::NotFound)?;
+    fn worktree_path(&self, task_id: Uuid) -> Result<PathBuf> {
+        let tasks = self.inner.tasks.read();
+        let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
         Ok(PathBuf::from(&record.summary.worktree_path))
     }
 
-    pub fn open_in_vscode(&self, req: WorkflowActionRequest) -> Result<()> {
-        let path = self.worktree_path(req.workflow_id)?;
+    pub fn open_in_vscode(&self, req: TaskActionRequest) -> Result<()> {
+        let path = self.worktree_path(req.task_id)?;
         spawn_vscode(&path)
     }
 
-    pub fn open_terminal(&self, req: WorkflowActionRequest) -> Result<()> {
-        let path = self.worktree_path(req.workflow_id)?;
+    pub fn open_terminal(&self, req: TaskActionRequest) -> Result<()> {
+        let path = self.worktree_path(req.task_id)?;
         spawn_terminal(&path)
     }
 
-    fn finish_workflow(&self, workflow_id: Uuid, exit_code: i32, app: &AppHandle) -> Result<()> {
-        let mut workflows = self.inner.workflows.write();
-        let record = workflows
-            .get_mut(&workflow_id)
-            .ok_or(WorkflowError::NotFound)?;
+    fn finish_task(&self, task_id: Uuid, exit_code: i32, app: &AppHandle) -> Result<()> {
+        let mut tasks = self.inner.tasks.write();
+        let record = tasks
+            .get_mut(&task_id)
+            .ok_or(TaskError::NotFound)?;
         record.summary.exit_code = Some(exit_code);
         record.summary.ended_at = Some(Utc::now());
         record.runtime = None;
         let target_status = match record.summary.status {
-            WorkflowStatus::Stopped => WorkflowStatus::Stopped,
-            WorkflowStatus::Discarded => WorkflowStatus::Discarded,
-            _ if exit_code == 0 => WorkflowStatus::Completed,
-            _ => WorkflowStatus::Failed,
+            TaskStatus::Stopped => TaskStatus::Stopped,
+            TaskStatus::Discarded => TaskStatus::Discarded,
+            _ if exit_code == 0 => TaskStatus::Completed,
+            _ => TaskStatus::Failed,
         };
         record.summary.status = target_status;
         emit_status(app, &record.summary);
@@ -649,9 +649,9 @@ impl WorkflowManager {
 
 fn stream_terminal_output(
     mut reader: Box<dyn Read + Send>,
-    manager: WorkflowManager,
+    manager: TaskManager,
     app: AppHandle,
-    workflow_id: Uuid,
+    task_id: Uuid,
 ) {
     let mut buffer = [0u8; 8192];
     loop {
@@ -659,12 +659,12 @@ fn stream_terminal_output(
             Ok(0) => break,
             Ok(size) => {
                 let chunk = String::from_utf8_lossy(&buffer[..size]).to_string();
-                manager.append_terminal_output(workflow_id, &chunk);
+                manager.append_terminal_output(task_id, &chunk);
                 let payload = TerminalOutputPayload {
-                    workflow_id,
+                    task_id,
                     data: chunk.clone(),
                 };
-                let _ = app.emit("workflow_terminal_output", payload);
+                let _ = app.emit("task_terminal_output", payload);
             }
             Err(_) => break,
         }
@@ -672,9 +672,9 @@ fn stream_terminal_output(
 }
 
 async fn wait_for_exit(
-    manager: WorkflowManager,
+    manager: TaskManager,
     app: AppHandle,
-    workflow_id: Uuid,
+    task_id: Uuid,
     child: Arc<Mutex<ChildHandle>>,
 ) {
     let exit_code = tauri::async_runtime::spawn_blocking(move || loop {
@@ -694,25 +694,25 @@ async fn wait_for_exit(
     .await
     .unwrap_or(1);
 
-    let _ = manager.finish_workflow(workflow_id, exit_code, &app);
+    let _ = manager.finish_task(task_id, exit_code, &app);
     let payload = TerminalExitPayload {
-        workflow_id,
+        task_id,
         exit_code,
     };
-    let _ = app.emit("workflow_terminal_exit", payload);
+    let _ = app.emit("task_terminal_exit", payload);
 }
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct TerminalOutputPayload {
-    workflow_id: Uuid,
+    task_id: Uuid,
     data: String,
 }
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct TerminalExitPayload {
-    workflow_id: Uuid,
+    task_id: Uuid,
     exit_code: i32,
 }
 
@@ -721,13 +721,13 @@ fn ensure_directory(path: &Path) -> Result<()> {
         if path.is_dir() {
             Ok(())
         } else {
-            Err(WorkflowError::Message(format!(
+            Err(TaskError::Message(format!(
                 "{} is not a directory",
                 path.display()
             )))
         }
     } else {
-        Err(WorkflowError::Message(format!(
+        Err(TaskError::Message(format!(
             "{} does not exist",
             path.display()
         )))
@@ -771,7 +771,7 @@ fn spawn_vscode(path: &Path) -> Result<()> {
             }
         }
     }
-    Err(WorkflowError::Message(
+    Err(TaskError::Message(
         "Unable to launch VS Code. Make sure the `code` command is available.".to_string(),
     ))
 }
@@ -840,7 +840,7 @@ fn spawn_terminal(path: &Path) -> Result<()> {
             return Ok(());
         }
 
-        Err(WorkflowError::Message(
+        Err(TaskError::Message(
             "Unable to launch a terminal window. Install Windows Terminal or ensure cmd.exe is available."
                 .to_string(),
         ))
@@ -880,7 +880,7 @@ fn spawn_terminal(path: &Path) -> Result<()> {
                 }
             }
         }
-        Err(WorkflowError::Message(
+        Err(TaskError::Message(
             "Unable to find a supported terminal application. Install gnome-terminal, kitty, or another supported terminal."
                 .to_string(),
         ))
@@ -1115,7 +1115,7 @@ where
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
     } else {
-        Err(WorkflowError::GitCommand {
+        Err(TaskError::GitCommand {
             command: format!(
                 "git -C {} {}",
                 repo.display(),
@@ -1145,8 +1145,8 @@ fn parse_diff_files(output: &str) -> Vec<DiffFile> {
         .collect()
 }
 
-fn emit_status(app: &AppHandle, summary: &WorkflowSummary) {
-    let _ = app.emit("workflow_status_changed", summary);
+fn emit_status(app: &AppHandle, summary: &TaskSummary) {
+    let _ = app.emit("task_status_changed", summary);
 }
 
 pub fn handle_select_base_repo(path: String) -> Result<BaseRepoInfo> {

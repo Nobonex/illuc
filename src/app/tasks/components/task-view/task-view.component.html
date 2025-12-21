@@ -1,6 +1,6 @@
-<ng-container *ngIf="workflow as current; else emptyState">
-  <section class="workflow-detail">
-    <header class="workflow-header">
+<ng-container *ngIf="task as current; else emptyState">
+  <section class="task-detail">
+    <header class="task-header">
       <div *ngIf="titleParts() as parts">
         <h2>
           <span *ngIf="parts.taskId" class="task-pill">#{{ parts.taskId }}</span>
@@ -63,29 +63,29 @@
         <span class="status-pill" [attr.data-status]="current.status">
           {{ statusLabel() }}
         </span>
-        <app-workflow-action-button
+        <app-task-action-button
           type="start"
           [disabled]="!canStart()"
           (action)="onStart()"
-        ></app-workflow-action-button>
-        <app-workflow-action-button
+        ></app-task-action-button>
+        <app-task-action-button
           type="stop"
           [disabled]="!isRunning()"
           (action)="onStop()"
-        ></app-workflow-action-button>
-        <app-workflow-action-button
+        ></app-task-action-button>
+        <app-task-action-button
           type="discard"
           (action)="onDiscard()"
-        ></app-workflow-action-button>
+        ></app-task-action-button>
       </div>
     </header>
 
     <div class="split-panels">
       <div class="terminal-column">
-        <app-workflow-terminal [workflowId]="current.workflowId"></app-workflow-terminal>
+        <app-task-terminal [taskId]="current.taskId"></app-task-terminal>
       </div>
       <div class="diff-column">
-        <app-workflow-diff [workflowId]="current.workflowId"></app-workflow-diff>
+        <app-task-diff [taskId]="current.taskId"></app-task-diff>
       </div>
     </div>
   </section>
@@ -112,7 +112,7 @@
         <h1>illuc</h1>
         <p class="etymology">„thither, to that place, to there“</p>
         <p class="subtitle">
-          Select a base repository to load managed worktrees, then choose an existing workflow or create a new branch to get started.
+          Select a base repository to load managed worktrees, then choose an existing task or create a new branch to get started.
         </p>
         <button
           type="button"

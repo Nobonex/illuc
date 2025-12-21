@@ -1,17 +1,17 @@
 import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 
-export type WorkflowActionButtonType = "start" | "stop" | "discard";
+export type TaskActionButtonType = "start" | "stop" | "discard";
 
 @Component({
-  selector: "app-workflow-action-button",
+  selector: "app-task-action-button",
   standalone: true,
   imports: [CommonModule],
-  templateUrl: "./workflow-action-button.component.html",
-  styleUrl: "./workflow-action-button.component.css",
+  templateUrl: "./task-action-button.component.html",
+  styleUrl: "./task-action-button.component.css",
 })
-export class WorkflowActionButtonComponent {
-  @Input({ required: true }) type: WorkflowActionButtonType = "start";
+export class TaskActionButtonComponent {
+  @Input({ required: true }) type: TaskActionButtonType = "start";
   @Input() disabled = false;
   @Input() title?: string;
   @Input() ariaLabel?: string;
@@ -34,11 +34,11 @@ export class WorkflowActionButtonComponent {
     }
     switch (this.type) {
       case "start":
-        return "Start workflow";
+        return "Start task";
       case "stop":
-        return "Stop workflow";
+        return "Stop task";
       case "discard":
-        return "Discard workflow";
+        return "Discard task";
       default:
         return "";
     }

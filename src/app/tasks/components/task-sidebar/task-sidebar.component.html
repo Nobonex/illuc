@@ -1,0 +1,71 @@
+<aside class="task-sidebar">
+  <div class="control-panel">
+    <div class="control-group">
+      <label>Base repository</label>
+      <div class="repo-info" *ngIf="baseRepo; else noRepo">
+        <span class="path">{{ baseRepo.canonicalPath }}</span>
+        <span class="branch">Branch: {{ baseRepo.currentBranch }}</span>
+      </div>
+      <ng-template #noRepo>
+        <span class="placeholder">No repository selected</span>
+      </ng-template>
+    </div>
+    <div class="control-group">
+      <label>New task</label>
+      <button type="button" class="primary" (click)="createTask.emit()" [disabled]="!baseRepo">
+        New Task
+      </button>
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <span class="title">Tasks</span>
+    <span class="count">{{ tasks?.length || 0 }}</span>
+  </div>
+
+  <div class="task-list" *ngIf="tasks?.length; else emptyState">
+    <div
+      *ngFor="let task of tasks; trackBy: trackById"
+      class="task-row"
+      [class.selected]="task.taskId === selectedTaskId"
+      (click)="onSelect(task.taskId)"
+    >
+      <div class="row-main" *ngIf="titleParts(task.title) as parts">
+        <div class="row-title">
+          <span *ngIf="parts.taskId" class="task-pill">#{{ parts.taskId }}</span>
+          <span class="title-text">{{ parts.label }}</span>
+        </div>
+        <span class="status" [attr.data-status]="task.status">
+          {{ statusLabel(task.status) }}
+        </span>
+      </div>
+
+      <div class="row-meta">
+        <small class="branch">{{ task.branchName }}</small>
+        <div class="actions">
+          <app-task-action-button
+            type="start"
+            [disabled]="!canStart(task.status)"
+            [stopPropagation]="true"
+            (action)="onStart(task.taskId)"
+          ></app-task-action-button>
+          <app-task-action-button
+            type="stop"
+            [disabled]="!isRunning(task.status)"
+            [stopPropagation]="true"
+            (action)="onStop(task.taskId)"
+          ></app-task-action-button>
+          <app-task-action-button
+            type="discard"
+            [stopPropagation]="true"
+            (action)="onDiscard(task.taskId)"
+          ></app-task-action-button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #emptyState>
+    <p class="empty">Create a task to get started.</p>
+  </ng-template>
+</aside>

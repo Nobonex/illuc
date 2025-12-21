@@ -1,4 +1,4 @@
-.workflow-sidebar {
+.task-sidebar {
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
@@ -73,23 +73,23 @@
   font-weight: 600;
 }
 
-.workflow-list {
+.task-list {
   flex: 1;
   overflow-y: auto;
 }
 
-.workflow-row {
+.task-row {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
-.workflow-row:hover {
+.task-row:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.workflow-row.selected {
+.task-row.selected {
   background: rgba(92, 225, 230, 0.12);
 }
 

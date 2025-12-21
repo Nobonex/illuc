@@ -2,9 +2,9 @@ import { CommonModule } from "@angular/common";
 import { Component } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { open } from "@tauri-apps/plugin-dialog";
-import { WorkflowSidebarComponent } from "./workflows/components/workflow-sidebar/workflow-sidebar.component";
-import { WorkflowViewComponent } from "./workflows/components/workflow-view/workflow-view.component";
-import { WorkflowStore } from "./workflows/workflow.store";
+import { TaskSidebarComponent } from "./tasks/components/task-sidebar/task-sidebar.component";
+import { TaskViewComponent } from "./tasks/components/task-view/task-view.component";
+import { TaskStore } from "./tasks/task.store";
 
 @Component({
   selector: "app-root",
@@ -12,8 +12,8 @@ import { WorkflowStore } from "./workflows/workflow.store";
   imports: [
     CommonModule,
     FormsModule,
-    WorkflowSidebarComponent,
-    WorkflowViewComponent,
+    TaskSidebarComponent,
+    TaskViewComponent,
   ],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
@@ -23,23 +23,23 @@ export class AppComponent {
   showCreateModal = false;
   branchNameInput = "";
   branchNameError = "";
-  confirmDiscardWorkflowId: string | null = null;
+  confirmDiscardTaskId: string | null = null;
   confirmDiscardTitle = "";
   confirmDiscardBranch = "";
   confirmDiscardError = "";
 
-  constructor(public readonly workflowStore: WorkflowStore) {}
+  constructor(public readonly taskStore: TaskStore) {}
 
-  workflows() {
-    return this.workflowStore.workflows();
+  tasks() {
+    return this.taskStore.tasks();
   }
 
-  selectedWorkflow() {
-    return this.workflowStore.selectedWorkflow();
+  selectedTask() {
+    return this.taskStore.selectedTask();
   }
 
   baseRepo() {
-    return this.workflowStore.baseRepo();
+    return this.taskStore.baseRepo();
   }
 
   async browseForRepo(): Promise<void> {
@@ -55,7 +55,7 @@ export class AppComponent {
 
   private async loadBaseRepo(path: string): Promise<void> {
     try {
-      await this.workflowStore.selectBaseRepo(path);
+      await this.taskStore.selectBaseRepo(path);
       this.statusMessage = `Loaded repository: ${path}`;
     } catch (error: unknown) {
       this.statusMessage = this.describeError(
@@ -65,9 +65,9 @@ export class AppComponent {
     }
   }
 
-  openCreateWorkflowModal(): void {
+  openCreateTaskModal(): void {
     if (!this.baseRepo()) {
-      this.statusMessage = "Select a base repository before creating workflows.";
+      this.statusMessage = "Select a base repository before creating tasks.";
       return;
     }
     this.branchNameInput = "";
@@ -75,13 +75,13 @@ export class AppComponent {
     this.showCreateModal = true;
   }
 
-  closeCreateWorkflowModal(): void {
+  closeCreateTaskModal(): void {
     this.showCreateModal = false;
     this.branchNameInput = "";
     this.branchNameError = "";
   }
 
-  async submitNewWorkflow(): Promise<void> {
+  async submitNewTask(): Promise<void> {
     const branch = this.branchNameInput.trim();
     if (!branch) {
       this.branchNameError = "Branch name is required.";
@@ -94,55 +94,55 @@ export class AppComponent {
     this.branchNameError = "";
     const title = this.deriveTitleFromBranch(branch);
     try {
-      await this.workflowStore.createWorkflow(branch, title);
-      this.statusMessage = `Workflow created on ${branch}.`;
-      this.closeCreateWorkflowModal();
+      await this.taskStore.createTask(branch, title);
+      this.statusMessage = `Task created on ${branch}.`;
+      this.closeCreateTaskModal();
     } catch (error: unknown) {
       this.branchNameError = this.describeError(
         error,
-        "Unable to create workflow.",
+        "Unable to create task.",
       );
     }
   }
 
-  async startWorkflow(workflowId: string): Promise<void> {
+  async startTask(taskId: string): Promise<void> {
     try {
-      await this.workflowStore.startWorkflow(workflowId);
-      this.statusMessage = "Workflow started.";
+      await this.taskStore.startTask(taskId);
+      this.statusMessage = "Task started.";
     } catch (error: unknown) {
       this.statusMessage = this.describeError(
         error,
-        "Unable to start workflow.",
+        "Unable to start task.",
       );
     }
   }
 
-  async stopWorkflow(workflowId: string): Promise<void> {
+  async stopTask(taskId: string): Promise<void> {
     try {
-      await this.workflowStore.stopWorkflow(workflowId);
-      this.statusMessage = "Workflow stopped.";
+      await this.taskStore.stopTask(taskId);
+      this.statusMessage = "Task stopped.";
     } catch (error: unknown) {
-      this.statusMessage = this.describeError(error, "Unable to stop workflow.");
+      this.statusMessage = this.describeError(error, "Unable to stop task.");
     }
   }
 
-  discardWorkflow(workflowId: string): void {
-    const workflow =
-      this.workflowStore.workflows().find((wf) => wf.workflowId === workflowId) ??
+  discardTask(taskId: string): void {
+    const task =
+      this.taskStore.tasks().find((wf) => wf.taskId === taskId) ??
       null;
-    this.confirmDiscardWorkflowId = workflowId;
-    this.confirmDiscardTitle = workflow?.title ?? "Selected workflow";
-    this.confirmDiscardBranch = workflow?.branchName ?? "";
+    this.confirmDiscardTaskId = taskId;
+    this.confirmDiscardTitle = task?.title ?? "Selected task";
+    this.confirmDiscardBranch = task?.branchName ?? "";
     this.confirmDiscardError = "";
   }
 
-  selectWorkflow(workflowId: string): void {
-    this.workflowStore.selectWorkflow(workflowId);
+  selectTask(taskId: string): void {
+    this.taskStore.selectTask(taskId);
   }
 
-  async openWorkflowInVsCode(workflowId: string): Promise<void> {
+  async openTaskInVsCode(taskId: string): Promise<void> {
     try {
-      await this.workflowStore.openWorkflowInVsCode(workflowId);
+      await this.taskStore.openTaskInVsCode(taskId);
       this.statusMessage = "Opened workspace in VS Code.";
     } catch (error: unknown) {
       this.statusMessage = this.describeError(
@@ -152,9 +152,9 @@ export class AppComponent {
     }
   }
 
-  async openWorkflowTerminal(workflowId: string): Promise<void> {
+  async openTaskTerminal(taskId: string): Promise<void> {
     try {
-      await this.workflowStore.openWorkflowTerminal(workflowId);
+      await this.taskStore.openTaskTerminal(taskId);
       this.statusMessage = "Opened workspace terminal.";
     } catch (error: unknown) {
       this.statusMessage = this.describeError(
@@ -164,25 +164,25 @@ export class AppComponent {
     }
   }
 
-  cancelDiscardWorkflow(): void {
-    this.confirmDiscardWorkflowId = null;
+  cancelDiscardTask(): void {
+    this.confirmDiscardTaskId = null;
     this.confirmDiscardTitle = "";
     this.confirmDiscardBranch = "";
     this.confirmDiscardError = "";
   }
 
-  async confirmDiscardWorkflow(): Promise<void> {
-    if (!this.confirmDiscardWorkflowId) {
+  async confirmDiscardTask(): Promise<void> {
+    if (!this.confirmDiscardTaskId) {
       return;
     }
     try {
-      await this.workflowStore.discardWorkflow(this.confirmDiscardWorkflowId);
-      this.statusMessage = "Workflow discarded and cleaned up.";
-      this.cancelDiscardWorkflow();
+      await this.taskStore.discardTask(this.confirmDiscardTaskId);
+      this.statusMessage = "Task discarded and cleaned up.";
+      this.cancelDiscardTask();
     } catch (error: unknown) {
       this.confirmDiscardError = this.describeError(
         error,
-        "Unable to discard workflow.",
+        "Unable to discard task.",
       );
     }
   }
