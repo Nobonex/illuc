@@ -91,20 +91,25 @@
 }
 
 .split-panels {
+  position: relative;
   flex: 1;
-  display: grid;
-  grid-template-columns: minmax(320px, 360px) 1fr;
-  gap: 0.75rem;
   padding: 0.75rem;
   min-height: 0;
   overflow: hidden;
 }
 
 .terminal-column {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  z-index: 1;
+  transition: box-shadow 0.2s ease, z-index 0.2s ease;
 }
 
 .terminal-column app-task-terminal {
@@ -114,14 +119,32 @@
 }
 
 .diff-column {
-  min-height: 0;
-  overflow: auto;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 60%;
   display: flex;
+  min-height: 0;
+  overflow: hidden;
+  z-index: 1;
+  transition: box-shadow 0.2s ease, z-index 0.2s ease;
 }
 
-.diff-column app-task-diff {
+.diff-column app-task-diff,
+.terminal-column app-task-terminal {
   flex: 1;
   display: block;
+}
+
+.terminal-column.active {
+  z-index: 2;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+}
+
+.diff-column.active {
+  z-index: 2;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
 }
 
 button {

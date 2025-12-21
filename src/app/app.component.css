@@ -71,9 +71,39 @@
   color: inherit;
 }
 
-.modal input:focus {
+.modal input:focus,
+.modal select:focus {
   outline: 2px solid rgba(92, 225, 230, 0.4);
   border-color: transparent;
+}
+
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: 0.45rem 2.25rem 0.45rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  color: inherit;
+  appearance: none;
+}
+
+.select-wrapper select:focus {
+  outline: 2px solid rgba(92, 225, 230, 0.4);
+  border-color: transparent;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 0.75rem;
+  pointer-events: none;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .input-label {

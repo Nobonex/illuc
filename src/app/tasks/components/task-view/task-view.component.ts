@@ -25,6 +25,7 @@ import { OpenTerminalButtonComponent } from "../open-terminal-button/open-termin
 export class TaskViewComponent {
   @Input() task: TaskSummary | null = null;
   @Input() baseRepo: BaseRepoInfo | null = null;
+  activePane: "terminal" | "diff" = "terminal";
   @Output() startTask = new EventEmitter<string>();
   @Output() stopTask = new EventEmitter<string>();
   @Output() discardTask = new EventEmitter<string>();
@@ -70,5 +71,9 @@ export class TaskViewComponent {
 
   onSelectBaseRepo(): void {
     this.selectBaseRepo.emit();
+  }
+
+  setActivePane(pane: "terminal" | "diff"): void {
+    this.activePane = pane;
   }
 }

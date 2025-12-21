@@ -90,6 +90,10 @@
   font-size: 0.8rem;
   background: rgba(4, 6, 9, 0.95);
   color: #e5f1ff;
+  contain: paint;
+  isolation: isolate;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .diff-file-section {
@@ -113,6 +117,8 @@
   gap: 0.5rem;
   padding: 0.15rem 0.5rem;
   white-space: pre-wrap;
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 .diff-line.add {

@@ -37,10 +37,20 @@
     </header>
 
     <div class="split-panels">
-      <div class="terminal-column">
+      <div
+        class="terminal-column"
+        [class.active]="activePane === 'terminal'"
+        (mouseenter)="setActivePane('terminal')"
+        (focusin)="setActivePane('terminal')"
+      >
         <app-task-terminal [taskId]="current.taskId"></app-task-terminal>
       </div>
-      <div class="diff-column">
+      <div
+        class="diff-column"
+        [class.active]="activePane === 'diff'"
+        (mouseenter)="setActivePane('diff')"
+        (focusin)="setActivePane('diff')"
+      >
         <app-task-diff [taskId]="current.taskId"></app-task-diff>
       </div>
     </div>

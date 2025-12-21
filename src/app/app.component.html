@@ -37,6 +37,24 @@
         [(ngModel)]="branchNameInput"
         placeholder="e.g. feature/25323-fancy-feature-name"
       />
+      <label class="input-label">Base branch</label>
+      <div class="select-wrapper">
+        <select [(ngModel)]="baseBranchSelection">
+          <option
+            *ngIf="
+              baseBranchSelection &&
+              branchOptions().indexOf(baseBranchSelection) === -1
+            "
+            [value]="baseBranchSelection"
+          >
+            {{ baseBranchSelection }}
+          </option>
+          <option *ngFor="let branch of branchOptions()" [value]="branch">
+            {{ branch }}
+          </option>
+        </select>
+        <span class="select-arrow">⌄</span>
+      </div>
       <div class="error" *ngIf="branchNameError">{{ branchNameError }}</div>
       <div class="modal-actions">
         <button type="button" class="ghost" (click)="closeCreateTaskModal()">Cancel</button>

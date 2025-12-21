@@ -27,6 +27,7 @@ export class AppComponent {
   confirmDiscardTitle = "";
   confirmDiscardBranch = "";
   confirmDiscardError = "";
+  baseBranchSelection = "";
 
   constructor(public readonly taskStore: TaskStore) {}
 
@@ -40,6 +41,10 @@ export class AppComponent {
 
   baseRepo() {
     return this.taskStore.baseRepo();
+  }
+
+  branchOptions() {
+    return this.taskStore.branches();
   }
 
   async browseForRepo(): Promise<void> {
@@ -72,6 +77,7 @@ export class AppComponent {
     }
     this.branchNameInput = "";
     this.branchNameError = "";
+    this.baseBranchSelection = this.taskStore.defaultBaseBranch() ?? "";
     this.showCreateModal = true;
   }
 
@@ -79,6 +85,7 @@ export class AppComponent {
     this.showCreateModal = false;
     this.branchNameInput = "";
     this.branchNameError = "";
+    this.baseBranchSelection = "";
   }
 
   async submitNewTask(): Promise<void> {
@@ -94,7 +101,7 @@ export class AppComponent {
     this.branchNameError = "";
     const title = this.deriveTitleFromBranch(branch);
     try {
-      await this.taskStore.createTask(branch, title);
+      await this.taskStore.createTask(branch, title, this.baseBranchSelection);
       this.statusMessage = `Task created on ${branch}.`;
       this.closeCreateTaskModal();
     } catch (error: unknown) {

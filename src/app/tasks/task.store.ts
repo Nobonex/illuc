@@ -18,6 +18,7 @@ export class TaskStore {
   private readonly tasksSignal = signal<TaskSummary[]>([]);
   private readonly baseRepoSignal = signal<BaseRepoInfo | null>(null);
   private readonly selectedTaskIdSignal = signal<string | null>(null);
+  private readonly branchOptionsSignal = signal<string[]>([]);
   private readonly terminalBuffers = new Map<string, string>();
   private readonly terminalStreams = new Map<string, Subject<string>>();
   private readonly unlistenFns: UnlistenFn[] = [];
@@ -25,6 +26,7 @@ export class TaskStore {
   readonly tasks = this.tasksSignal.asReadonly();
   readonly baseRepo = this.baseRepoSignal.asReadonly();
   readonly selectedTaskId = this.selectedTaskIdSignal.asReadonly();
+  readonly branchOptions = this.branchOptionsSignal.asReadonly();
   readonly selectedTask = computed(() => {
     const id = this.selectedTaskIdSignal();
     if (!id) {
@@ -47,21 +49,28 @@ export class TaskStore {
     this.baseRepoSignal.set(normalized);
     this.tasksSignal.set([]);
     this.selectedTaskIdSignal.set(null);
+    this.branchOptionsSignal.set([]);
     this.terminalBuffers.clear();
     this.terminalStreams.clear();
     await this.loadExistingTasks(normalized.path);
+    await this.loadBranches(normalized.path);
     return normalized;
   }
 
-  async createTask(branchName: string, displayTitle: string): Promise<TaskSummary> {
+  async createTask(
+    branchName: string,
+    displayTitle: string,
+    baseBranch?: string | null,
+  ): Promise<TaskSummary> {
     const repo = this.baseRepoSignal();
     if (!repo) {
       throw new Error("Select a base repository before creating tasks.");
     }
+    const baseRef = baseBranch?.trim() || repo.currentBranch || repo.head;
     const summary = await invoke<TaskSummary>("create_task", {
       req: {
         baseRepoPath: repo.path,
-        baseRef: repo.head,
+        baseRef,
         taskTitle: displayTitle.trim() || undefined,
         branchName: branchName.trim(),
       },
@@ -129,6 +138,14 @@ export class TaskStore {
 
   selectTask(taskId: string | null): void {
     this.selectedTaskIdSignal.set(taskId);
+  }
+
+  branches(): string[] {
+    return this.branchOptionsSignal();
+  }
+
+  defaultBaseBranch(): string | null {
+    return this.baseRepoSignal()?.currentBranch ?? null;
   }
 
   getTerminalBuffer(taskId: string): string {
@@ -213,6 +230,16 @@ export class TaskStore {
       summaries.forEach((summary) => this.upsertTask(summary));
     } catch (error) {
       console.error("Failed to load existing worktrees", error);
+    }
+  }
+
+  private async loadBranches(baseRepoPath: string): Promise<void> {
+    try {
+      const branches = await invoke<string[]>("list_branches", { path: baseRepoPath });
+      this.branchOptionsSignal.set(branches);
+    } catch (error) {
+      console.error("Failed to load branches", error);
+      this.branchOptionsSignal.set([]);
     }
   }
 

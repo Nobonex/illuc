@@ -1,7 +1,8 @@
 mod tasks;
 
 use tasks::{
-    handle_select_base_repo, open_path_in_vscode as open_path_in_vscode_util,
+    handle_select_base_repo, list_branches as list_branches_util,
+    open_path_in_vscode as open_path_in_vscode_util,
     open_path_terminal as open_path_terminal_util, BaseRepoInfo, CreateTaskRequest, DiffPayload,
     DiffRequest, DiscardTaskRequest, StartTaskRequest, StopTaskRequest, TerminalResizeRequest,
     TerminalWriteRequest, TaskActionRequest, TaskManager, TaskSummary,
@@ -119,6 +120,11 @@ async fn open_path_terminal(path: String) -> CommandResult<()> {
     open_path_terminal_util(&path).map_err(|err| err.to_string())
 }
 
+#[tauri::command]
+async fn list_branches(path: String) -> CommandResult<Vec<String>> {
+    list_branches_util(path).map_err(|err| err.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -138,7 +144,8 @@ pub fn run() {
             open_worktree_in_vscode,
             open_worktree_terminal,
             open_path_in_vscode,
-            open_path_terminal
+            open_path_terminal,
+            list_branches
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

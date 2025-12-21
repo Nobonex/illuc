@@ -284,12 +284,13 @@ impl TaskManager {
             }
         }
 
-        let (worktree_path, title) = {
+        let (worktree_path, title, _has_started) = {
             let tasks = self.inner.tasks.read();
             let record = tasks.get(&task_id).ok_or(TaskError::NotFound)?;
             (
                 PathBuf::from(&record.summary.worktree_path),
                 record.summary.title.clone(),
+                record.summary.started_at.is_some(),
             )
         };
 
@@ -311,7 +312,11 @@ impl TaskManager {
         let master = Arc::new(Mutex::new(master));
         let writer = Arc::new(Mutex::new(writer));
 
-        let args = codex_args.unwrap_or_else(|| vec!["resume".to_string(), "--last".to_string()]);
+        let args = if let Some(explicit) = codex_args {
+            explicit
+        } else {
+            vec!["resume".to_string()]
+        };
 
         let mut command = CommandBuilder::new("codex");
         command.args(args.iter().map(|s| s.as_str()));
@@ -762,6 +767,19 @@ pub fn open_path_terminal(path: &str) -> Result<()> {
     let target = PathBuf::from(path);
     ensure_directory(&target)?;
     spawn_terminal(&target)
+}
+
+pub fn list_branches(path: String) -> Result<Vec<String>> {
+    let repo = PathBuf::from(&path);
+    ensure_directory(&repo)?;
+    validate_git_repo(&repo)?;
+    let output = run_git(&repo, ["branch", "--format=%(refname:short)"])?;
+    let branches = output
+        .lines()
+        .map(|line| line.trim().trim_start_matches('*').trim().to_string())
+        .filter(|line| !line.is_empty())
+        .collect();
+    Ok(branches)
 }
 
 fn spawn_vscode(path: &Path) -> Result<()> {
