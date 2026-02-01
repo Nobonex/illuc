@@ -165,14 +165,20 @@ export class TaskViewComponent {
                 this.commitMessage.trim(),
                 this.commitStageAll,
             );
-            this.closeCommitModal();
+            this.zone.run(() => {
+                this.closeCommitModal();
+            });
         } catch (error: unknown) {
-            this.commitError = this.describeError(
-                error,
-                "Unable to commit changes.",
-            );
+            this.zone.run(() => {
+                this.commitError = this.describeError(
+                    error,
+                    "Unable to commit changes.",
+                );
+            });
         } finally {
-            this.isCommitting = false;
+            this.zone.run(() => {
+                this.isCommitting = false;
+            });
         }
     }
 
@@ -208,14 +214,20 @@ export class TaskViewComponent {
                 this.pushBranch.trim() || this.task.branchName,
                 this.pushSetUpstream,
             );
-            this.closePushModal();
+            this.zone.run(() => {
+                this.closePushModal();
+            });
         } catch (error: unknown) {
-            this.pushError = this.describeError(
-                error,
-                "Unable to push changes.",
-            );
+            this.zone.run(() => {
+                this.pushError = this.describeError(
+                    error,
+                    "Unable to push changes.",
+                );
+            });
         } finally {
-            this.isPushing = false;
+            this.zone.run(() => {
+                this.isPushing = false;
+            });
         }
     }
 

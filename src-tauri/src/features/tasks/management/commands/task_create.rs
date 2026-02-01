@@ -9,6 +9,7 @@ pub struct Request {
     pub task_title: Option<String>,
     pub base_ref: Option<String>,
     pub branch_name: Option<String>,
+    pub use_existing_branch: Option<bool>,
 }
 
 pub type Response = TaskSummary;

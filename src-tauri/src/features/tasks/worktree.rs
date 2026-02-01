@@ -1,4 +1,5 @@
 use crate::error::Result;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 pub fn managed_worktree_root(repo_root: &Path) -> Result<PathBuf> {
@@ -26,6 +27,46 @@ pub fn format_title_from_branch(branch: &str) -> String {
     } else {
         label
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorktreeMetadata {
+    pub delete_branch_on_discard: bool,
+}
+
+pub fn read_worktree_metadata(worktree_path: &Path) -> Option<WorktreeMetadata> {
+    let metadata_path = worktree_metadata_path(worktree_path)?;
+    let contents = std::fs::read_to_string(metadata_path).ok()?;
+    serde_json::from_str(&contents).ok()
+}
+
+pub fn write_worktree_metadata(
+    worktree_path: &Path,
+    metadata: &WorktreeMetadata,
+) -> Result<()> {
+    let metadata_path = worktree_metadata_path(worktree_path)
+        .ok_or_else(|| crate::error::TaskError::Message("Invalid worktree path.".into()))?;
+    if let Some(parent) = metadata_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let contents = serde_json::to_string_pretty(metadata)
+        .map_err(|err| crate::error::TaskError::Message(err.to_string()))?;
+    std::fs::write(metadata_path, contents)?;
+    Ok(())
+}
+
+pub fn delete_worktree_metadata(worktree_path: &Path) {
+    if let Some(metadata_path) = worktree_metadata_path(worktree_path) {
+        let _ = std::fs::remove_file(metadata_path);
+    }
+}
+
+fn worktree_metadata_path(worktree_path: &Path) -> Option<PathBuf> {
+    let worktree_id = worktree_path.file_name()?.to_string_lossy();
+    let root = worktree_path.parent()?;
+    let metadata_dir = root.join(".meta");
+    Some(metadata_dir.join(format!("{}.json", worktree_id)))
 }
 
 fn extract_task_and_label(slug: &str) -> (Option<String>, String) {

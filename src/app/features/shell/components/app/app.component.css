@@ -188,6 +188,18 @@
     color: var(--color-muted);
 }
 
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    color: var(--color-muted);
+}
+
+.checkbox input {
+    accent-color: var(--color-accent);
+}
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;

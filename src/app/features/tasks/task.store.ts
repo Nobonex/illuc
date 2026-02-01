@@ -91,6 +91,7 @@ export class TaskStore {
         branchName: string,
         displayTitle: string,
         baseBranch?: string | null,
+        useExistingBranch = false,
     ): Promise<TaskSummary> {
         const repo = this.baseRepoSignal();
         if (!repo) {
@@ -103,6 +104,7 @@ export class TaskStore {
                 baseRef,
                 taskTitle: displayTitle.trim() || undefined,
                 branchName: branchName.trim(),
+                useExistingBranch: useExistingBranch || undefined,
             },
         });
         this.upsertTask(summary);

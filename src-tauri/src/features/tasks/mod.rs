@@ -46,7 +46,15 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::AppHandle;
 use uuid::Uuid;
-use worktree::{clean_branch_name, format_title_from_branch, managed_worktree_root};
+use worktree::{
+    clean_branch_name,
+    delete_worktree_metadata,
+    format_title_from_branch,
+    managed_worktree_root,
+    read_worktree_metadata,
+    write_worktree_metadata,
+    WorktreeMetadata,
+};
 
 
 const DEFAULT_SCREEN_ROWS: usize = 40;
@@ -144,6 +152,7 @@ impl TaskManager {
             task_title,
             base_ref,
             branch_name,
+            use_existing_branch,
         } = req;
 
         let base_repo = PathBuf::from(base_repo_path);
@@ -152,11 +161,6 @@ impl TaskManager {
 
         validate_git_repo(&base_repo)?;
 
-        let base_ref = base_ref.unwrap_or_else(|| "HEAD".to_string());
-        let base_commit = run_git(&repo_root, ["rev-parse", base_ref.as_str()])?
-            .trim()
-            .to_string();
-
         let task_id = Uuid::new_v4();
         let title = task_title.unwrap_or_else(|| format!("Task {}", task_id.simple()));
         let timestamp = Utc::now();
@@ -164,6 +168,36 @@ impl TaskManager {
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
             .ok_or_else(|| TaskError::Message("Branch name is required.".into()))?;
+        let use_existing_branch = use_existing_branch.unwrap_or(false);
+        let base_ref = base_ref
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| "HEAD".to_string());
+        if use_existing_branch {
+            let current_branch = run_git(&repo_root, ["rev-parse", "--abbrev-ref", "HEAD"])?
+                .trim()
+                .to_string();
+            if current_branch == branch_name {
+                if base_ref == "HEAD" || base_ref == branch_name {
+                    return Err(TaskError::Message(
+                        "Select a different base branch to keep the base repository available."
+                            .into(),
+                    ));
+                }
+                if base_ref.starts_with("remotes/") {
+                    return Err(TaskError::Message(
+                        "Select a local base branch to keep the base repository on a branch."
+                            .into(),
+                    ));
+                }
+                if run_git(&repo_root, ["switch", base_ref.as_str()]).is_err() {
+                    run_git(&repo_root, ["checkout", base_ref.as_str()])?;
+                }
+            }
+        }
+        let base_commit = run_git(&repo_root, ["rev-parse", base_ref.as_str()])?
+            .trim()
+            .to_string();
         info!("create_task task_id={} branch={}", task_id, branch_name);
 
         let managed_root = managed_worktree_root(&repo_root)?;
@@ -175,16 +209,29 @@ impl TaskManager {
 
         let worktree_path_str = worktree_path.to_string_lossy().to_string();
         let worktree_path_display = normalize_path_string(&worktree_path);
-        run_git(
-            &repo_root,
-            [
-                "worktree",
-                "add",
-                "-b",
-                branch_name.as_str(),
-                worktree_path_str.as_str(),
-                base_ref.as_str(),
-            ],
+        if use_existing_branch {
+            run_git(
+                &repo_root,
+                ["worktree", "add", worktree_path_str.as_str(), branch_name.as_str()],
+            )?;
+        } else {
+            run_git(
+                &repo_root,
+                [
+                    "worktree",
+                    "add",
+                    "-b",
+                    branch_name.as_str(),
+                    worktree_path_str.as_str(),
+                    base_ref.as_str(),
+                ],
+            )?;
+        }
+        write_worktree_metadata(
+            worktree_path.as_path(),
+            &WorktreeMetadata {
+                delete_branch_on_discard: !use_existing_branch,
+            },
         )?;
 
         let summary = TaskSummary {
@@ -367,6 +414,9 @@ impl TaskManager {
                 record.shell.is_some(),
             )
         };
+        let delete_branch = read_worktree_metadata(worktree_path.as_path())
+            .map(|meta| meta.delete_branch_on_discard)
+            .unwrap_or(true);
 
         if runtime_exists {
             let _ = self.stop_task(StopTaskRequest { task_id }, app);
@@ -392,7 +442,10 @@ impl TaskManager {
                 worktree_path_string.as_str(),
             ],
         );
-        let _ = run_git(&base_repo_path, ["branch", "-D", branch_name.as_str()]);
+        if delete_branch {
+            let _ = run_git(&base_repo_path, ["branch", "-D", branch_name.as_str()]);
+        }
+        delete_worktree_metadata(worktree_path.as_path());
         if worktree_path.exists() {
             let _ = std::fs::remove_dir_all(&worktree_path);
         }

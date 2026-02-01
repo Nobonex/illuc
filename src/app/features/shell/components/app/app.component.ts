@@ -28,6 +28,9 @@ export class AppComponent implements OnInit, OnDestroy {
     showCreateModal = false;
     branchNameInput = "";
     branchNameError = "";
+    useSelectedBranch = false;
+    private branchNameDraft = "";
+    private baseBranchDraft = "";
     confirmDiscardTaskId: string | null = null;
     confirmDiscardTitle = "";
     confirmDiscardBranch = "";
@@ -119,6 +122,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.branchNameInput = "";
         this.branchNameError = "";
         this.baseBranchSelection = this.taskStore.defaultBaseBranch() ?? "";
+        this.branchNameDraft = "";
+        this.baseBranchDraft = "";
+        this.setUseSelectedBranch(false);
         this.showCreateModal = true;
     }
 
@@ -127,12 +133,43 @@ export class AppComponent implements OnInit, OnDestroy {
         this.branchNameInput = "";
         this.branchNameError = "";
         this.baseBranchSelection = "";
+        this.branchNameDraft = "";
+        this.baseBranchDraft = "";
+        this.setUseSelectedBranch(false);
     }
 
     async submitNewTask(): Promise<void> {
         const branch = this.branchNameInput.trim();
         if (!branch) {
-            this.branchNameError = "Branch name is required.";
+            this.branchNameError = this.useSelectedBranch
+                ? "Select the branch to keep working on."
+                : "Branch name is required.";
+            return;
+        }
+        if (this.useSelectedBranch && !this.baseBranchSelection.trim()) {
+            this.branchNameError =
+                "Select a base branch for the repository.";
+            return;
+        }
+        if (this.useSelectedBranch && branch === "HEAD") {
+            this.branchNameError =
+                "Switch the base repository to a branch before continuing.";
+            return;
+        }
+        if (
+            this.useSelectedBranch &&
+            this.baseBranchSelection.trim().startsWith("remotes/")
+        ) {
+            this.branchNameError =
+                "Select a local base branch for the repository.";
+            return;
+        }
+        if (
+            this.useSelectedBranch &&
+            this.baseBranchSelection.trim() === branch
+        ) {
+            this.branchNameError =
+                "Choose a different base branch to keep the base repository available.";
             return;
         }
         if (!this.baseRepo()) {
@@ -150,6 +187,7 @@ export class AppComponent implements OnInit, OnDestroy {
                 branch,
                 title,
                 this.baseBranchSelection,
+                this.useSelectedBranch,
             );
             this.closeCreateTaskModal();
         } catch (error: unknown) {
@@ -280,5 +318,63 @@ export class AppComponent implements OnInit, OnDestroy {
 
     stoppingTasks(): Set<string> {
         return this.stoppingTaskIds;
+    }
+
+    onBaseBranchSelectionChange(value: string): void {
+        this.baseBranchSelection = value;
+    }
+
+    onUseSelectedBranchChange(value: boolean): void {
+        this.setUseSelectedBranch(value);
+    }
+
+    private setUseSelectedBranch(value: boolean): void {
+        if (this.useSelectedBranch === value) {
+            return;
+        }
+        this.useSelectedBranch = value;
+        if (value) {
+            this.branchNameDraft = this.branchNameInput;
+            this.baseBranchDraft = this.baseBranchSelection;
+            const baseRepoBranch = this.baseRepo()?.currentBranch ?? "";
+            const currentBranch =
+                this.branchNameInput.trim() ||
+                baseRepoBranch.trim() ||
+                this.baseBranchSelection.trim();
+            this.branchNameInput = currentBranch;
+            this.baseBranchSelection =
+                this.pickParkingBranch(currentBranch) ||
+                this.baseBranchSelection;
+        } else {
+            this.branchNameInput = this.branchNameDraft;
+            this.branchNameDraft = "";
+            if (this.baseBranchDraft) {
+                this.baseBranchSelection = this.baseBranchDraft;
+            }
+            this.baseBranchDraft = "";
+        }
+        this.branchNameError = "";
+    }
+
+    private pickParkingBranch(currentBranch: string): string {
+        const branches = this.branchOptions();
+        if (!branches.length) {
+            return "";
+        }
+        const local = branches.filter(
+            (branch) => !branch.startsWith("remotes/"),
+        );
+        const preferred = ["main", "master", "trunk", "develop"];
+        const candidates = local.length ? local : branches;
+        for (const name of preferred) {
+            const match = candidates.find(
+                (branch) => branch === name && branch !== currentBranch,
+            );
+            if (match) {
+                return match;
+            }
+        }
+        const fallback = candidates.find((branch) => branch !== currentBranch);
+        return fallback ?? "";
     }
 }
