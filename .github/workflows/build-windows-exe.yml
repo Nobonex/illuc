@@ -54,15 +54,14 @@ jobs:
         run: |
           npm version "${{ steps.ver.outputs.ver }}" --no-git-tag-version
 
-      - name: Set Tauri version to tag
+      - name: Set Tauri config version to tag (v2 schema)
         shell: bash
         run: |
           node -e "
             const fs=require('fs');
             const p='src-tauri/tauri.conf.json';
             const j=JSON.parse(fs.readFileSync(p,'utf8'));
-            j.package = j.package || {};
-            j.package.version='${{ steps.ver.outputs.ver }}';
+            j.version='${{ steps.ver.outputs.ver }}';
             fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
           "
 
