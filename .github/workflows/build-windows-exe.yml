@@ -1,7 +1,6 @@
-name: Build Windows EXE
+name: Build Windows EXE & Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - "v*"
@@ -11,11 +10,14 @@ permissions:
 
 jobs:
   build-windows-exe:
+    name: Build Windows EXE
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout (tag)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -66,28 +68,20 @@ jobs:
           if-no-files-found: error
 
   create-github-release:
-    if: github.ref == 'refs/heads/master'
+    name: Create GitHub Release
     needs: build-windows-exe
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-
-      - name: Read version
-        id: version
+      - name: Determine tag from ref
+        id: tag
+        shell: bash
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
-          if [ -z "$VERSION" ]; then
-            echo "package.json version is empty" >&2
+          if [[ "${GITHUB_REF}" != refs/tags/v* ]]; then
+            echo "This workflow only runs on tag pushes (v*)." >&2
             exit 1
           fi
-          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "value=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Download EXE artifacts
         uses: actions/download-artifact@v4
@@ -99,9 +93,11 @@ jobs:
       - name: Create or update GitHub release
         uses: ncipollo/release-action@v1
         with:
-          tag: v${{ steps.version.outputs.value }}
-          name: illuc v${{ steps.version.outputs.value }}
-          commit: ${{ github.sha }}
+          tag: ${{ steps.tag.outputs.value }}
+          name: illuc ${{ steps.tag.outputs.value }}
+          # For tag-triggered workflows, the tag points at the commit.
+          # Using the tag name avoids ambiguity vs github.sha in tag events.
+          commit: ${{ steps.tag.outputs.value }}
           allowUpdates: true
           replacesArtifacts: true
           generateReleaseNotes: true
