@@ -95,9 +95,6 @@ jobs:
         with:
           tag: ${{ steps.tag.outputs.value }}
           name: illuc ${{ steps.tag.outputs.value }}
-          # For tag-triggered workflows, the tag points at the commit.
-          # Using the tag name avoids ambiguity vs github.sha in tag events.
-          commit: ${{ steps.tag.outputs.value }}
           allowUpdates: true
           replacesArtifacts: true
           generateReleaseNotes: true
